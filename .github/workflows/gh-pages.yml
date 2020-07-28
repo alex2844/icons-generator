@@ -15,8 +15,9 @@ jobs:
           npm install
           npm run cron
       - name: Deploy
-        uses: JamesIves/github-pages-deploy-action@master
+        uses: crazy-max/ghaction-github-pages@v2
         with:
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-          BRANCH: gh-pages
-          FOLDER: gh-pages
+          target_branch: gh-pages
+          build_dir: gh-pages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
