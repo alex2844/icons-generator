@@ -545,7 +545,7 @@ Base = Base.extend({
 			if (this.params_.type == 'checkbox') {
 				c = $$('input', this.el_).filter(f => f.checked).map(f => f.value);
 				if (!c.length)
-					c = this.params_.defaultValue || this.params_.options[0].id
+					c = this.params_.defaultValue || [ this.params_.options[0].id ]
 			}else{
 				c = this.value_;
 				if (c === undefined)
@@ -560,7 +560,7 @@ Base = Base.extend({
 			if (this.params_.type == 'checkbox') {
 				this.value_ = $$('input', this.el_).filter(f => f.checked).map(f => f.value);
 				if (!c)
-					$$('input', this.el_).forEach(f => (f.checked = (d.indexOf(f.value) > -1)));
+					$$('input', this.el_).forEach(f => (f.checked = (((typeof(d) == 'string') ? [ d ] : d).indexOf(f.value) > -1)));
 			}else{
 				this.value_ = d;
 				if (!c)

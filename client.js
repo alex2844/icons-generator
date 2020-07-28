@@ -1,5 +1,3 @@
-// TODO
-// https://www.norio.be/android-feature-graphic-generator/?config=%7B%22background%22%3A%7B%22color%22%3A%22%2380cbc4%22%2C%22gradient%22%3A%7B%22type%22%3A%22none%22%2C%22radius%22%3A%22600%22%2C%22angle%22%3A%22vertical%22%2C%22color%22%3A%22%23000000%22%7D%7D%2C%22title%22%3A%7B%22text%22%3A%22%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20Qwedl%20Movies%22%2C%22position%22%3A84%2C%22color%22%3A%22%23757575%22%2C%22size%22%3A50%2C%22font%22%3A%7B%22family%22%3A%22Roboto%22%2C%22effect%22%3A%22bold%22%7D%7D%2C%22subtitle%22%3A%7B%22text%22%3A%22%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%D0%9E%D0%BD%D0%BB%D0%B0%D0%B9%D0%BD%20%D0%BA%D0%B8%D0%BD%D0%BE%D1%82%D0%B5%D0%B0%D1%82%D1%80%22%2C%22color%22%3A%22%23757575%22%2C%22size%22%3A40%2C%22offset%22%3A0%2C%22font%22%3A%7B%22family%22%3A%22Raleway%22%2C%22effect%22%3A%22normal%22%7D%7D%2C%22image%22%3A%7B%22position%22%3A%220.5%22%2C%22positionX%22%3A%220.1%22%2C%22scale%22%3A%220.55%22%2C%22file%22%3A%7B%7D%7D%2C%22size%22%3A%22tv-banner%22%7D
 let time = 0;
 var components,
 	form,
