@@ -15,7 +15,7 @@ jobs:
           npm install
           npm run cron
       - name: Deploy
-        uses: crazy-max/ghaction-github-pages@master
+        uses: crazy-max/ghaction-github-pages@v2
         with:
           target_branch: gh-pages
           build_dir: gh-pages
