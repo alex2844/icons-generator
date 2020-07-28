@@ -1,0 +1,20 @@
+name: gh-pages
+on:
+  schedule:
+    - cron:  '@daily'
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@master
+      - name: Cron
+        run: |
+          npm install
+          npm run cron
+      - name: Deploy
+        uses: JamesIves/github-pages-deploy-action@master
+        with:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+          BRANCH: gh-pages
+          FOLDER: build

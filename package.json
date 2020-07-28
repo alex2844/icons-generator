@@ -1,0 +1,21 @@
+{
+	"name": "icons-generator",
+	"version": "1.0.0",
+	"description": "",
+	"scripts": {
+		"cron": "CRON=true npx gulp",
+		"server": "SERVER=true npx gulp --server"
+	},
+	"devDependencies": {
+		"gulp": "^4.0.2",
+		"http-server": "^0.12.3",
+		"js-global-fetch": "^1.2.0"
+	},
+	"repository": "https://github.com/alex2844/icons-generator.git",
+	"author": {
+		"name": "Alex Smith",
+		"email": "alex.smith2844@gmail.com",
+		"website": "https://me.qwedl.com/",
+		"github": "https://github.com/alex2844"
+	}
+}
