@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<meta name="author" content="Alex Smith, https://me.qwedl.com/"/>
+	<meta name="description" content="Material icons generator" />
+	<title>Icons generator</title>
+	<style>body,html.spinner body{visibility:hidden}html:after,.spinner:after{content:'';border-radius:50%;border:4px transparent solid;border-top-color:var(--theme,#3F51B5);animation:spinner 1s infinite}html:after,button.spinner:after{position:fixed}html:after{height:40px;width:40px;left:50%;top:50%;margin:-20px 0 0 -20px}@keyframes spinner{to{transform:rotate(360deg)}}</style>
+	<link rel="shortcut icon" href="data:image/x-icon;," type="image/x-icon" />
+	<link rel="stylesheet" href="https://alex2844.github.io/qad-cmf/dist/css/tablet_dark.css" />
+	<link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin />
+	<link rel="preload" href="https://fonts.googleapis.com/icon?family=Material+Icons&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+	<script src="asset-studio.js"></script>
+</head>
+<body>
+	<div class="content">
+		<header>
+			<h1>Icons generator</h1>
+		</header>
+		<main>
+			<aside>
+				<h3 data-icon="visibility">Предпросмотр</h3>
+				<section id="outputs"></section>
+			</aside>
+			<section>
+				<div id="inputs" class="card">
+					<div id="inputs-form" class="p"></div>
+					<br />
+				</div>
+				<div id="zip-stub" hidden><div id="zip-button-stub"></div></div>
+			</section>
+		</main>
+	</div>
+	<script src="https://alex2844.github.io/qad-cmf/dist/js/client.js"></script>
+	<script async src="client.js"></script>
+	<style>
+		[for="_frm-iconform-foreground"] {
+			cursor: pointer;
+			display: flex;
+			padding: 16px;
+		}
+		img { max-width: 100% }
+		.out-image { border: 1px dotted var(--border) }
+		.range, .form-color, .form-text { margin-left: 15px }
+		#outputs > .out-image-group:first-child > h2:first-child { margin-top: 0 }
+	</style>
+</body>
+</html>
