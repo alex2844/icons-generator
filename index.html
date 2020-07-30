@@ -4,7 +4,7 @@
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
 	<meta name="author" content="Alex Smith, https://me.qwedl.com/"/>
-	<meta name="description" content="Material icons generator" />
+	<meta name="description" content="Данный проект создан для того, чтобы вы могли создать свою уникальную иконку для своего сайта, приложения на android и android TV. Иконки создаются для материального дизайна" />
 	<title>Icons generator</title>
 	<style>body,html.spinner body{visibility:hidden}html:after,.spinner:after{content:'';border-radius:50%;border:4px transparent solid;border-top-color:var(--theme,#3F51B5);animation:spinner 1s infinite}html:after,button.spinner:after{position:fixed}html:after{height:40px;width:40px;left:50%;top:50%;margin:-20px 0 0 -20px}@keyframes spinner{to{transform:rotate(360deg)}}</style>
 	<link rel="shortcut icon" href="data:image/x-icon;," type="image/x-icon" />
@@ -17,9 +17,11 @@
 	<div class="content">
 		<header>
 			<h1>Icons generator</h1>
+			<button class="material-icons" id="spinner">autorenew</button>
+			<button class="material-icons" onclick="download()">cloud_download</button>
 		</header>
 		<main>
-			<aside>
+			<aside style="display: none">
 				<h3 data-icon="visibility">Предпросмотр</h3>
 				<section id="outputs"></section>
 			</aside>
@@ -32,6 +34,13 @@
 			</section>
 		</main>
 	</div>
+	<dialog id="colors">
+		<section class="table"></section>
+		<footer>
+			<input />
+			<button onclick="this.closest('dialog').close()">Cancel</button>
+		</footer>
+	</dialog>
 	<script src="https://alex2844.github.io/qad-cmf/dist/js/client.js"></script>
 	<script async src="client.js"></script>
 	<style>
@@ -40,10 +49,23 @@
 			display: flex;
 			padding: 16px;
 		}
+		dialog {
+			max-width: 80vw;
+			max-height: 80vh;
+		}
+		dialog input {
+			position: absolute;
+			left: 10px;
+			color: var(--color);
+			background: var(--aside);
+			width: 60px;
+			border: 0;
+		}
 		img { max-width: 100% }
 		.out-image { border: 1px dotted var(--border) }
 		.range, .form-color, .form-text { margin-left: 15px }
 		#outputs > .out-image-group:first-child > h2:first-child { margin-top: 0 }
+		#spinner:not([hidden]) { animation: spinner .8s linear infinite }
 	</style>
 </body>
 </html>

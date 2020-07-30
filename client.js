@@ -1,6 +1,5 @@
-let time = 0;
-var components,
-	form,
+var form,
+	time = 0,
 	resList = [],
 	IMAGE_RESOURCES = {},
 	RESOLUTIONS = [
@@ -11,20 +10,23 @@ var components,
 		{ id: 'mdpi' }
 	],
 	VERSIONS = [
+		{ id: 'banner', title: 'Баннер' },
 		{ id: 'splash', title: 'Web / Splash' },
 		{ id: 'launcher', title: 'Обычные иконки' },
 		{ id: 'launcher_round', title: 'Круглые иконки' },
-		{ id: 'notify', title: 'Уведомления' }
+		{ id: 'notification', title: 'Уведомления' }
 	],
 	PARAM_RESOURCES = {
-		'xxxhdpi-splash-iconSize': { w: 420, h: 420 },
-		'xxxhdpi-splash-targetRect': { x: 5, y: 5, w: 410, h: 410 },
-		'xxhdpi-splash-iconSize': { w: 192, h: 192 },
-		'xxhdpi-splash-targetRect': { x: 1, y: 1, w: 190, h: 190 },
-		'xhdpi-splash-iconSize': { w: 48, h: 48 },
-		'xhdpi-splash-targetRect': { x: 1, y: 1, w: 46, h: 46 },
-		'notify-iconSize': { w: 24, h: 24 },
-		'notify-targetRect': { x: 2, y: 2, w: 20, h: 20 },
+		'xhdpi-banner-iconSize': { w: 320, h: 180 },
+		'xhdpi-banner-targetRect': { x: 22, y: 40, w: 105, h: 105 },
+		'xhdpi-splash-iconSize': { w: 420, h: 420 },
+		'xhdpi-splash-targetRect': { x: 5, y: 5, w: 410, h: 410 },
+		'hdpi-splash-iconSize': { w: 192, h: 192 },
+		'hdpi-splash-targetRect': { x: 1, y: 1, w: 190, h: 190 },
+		'mdpi-splash-iconSize': { w: 48, h: 48 },
+		'mdpi-splash-targetRect': { x: 1, y: 1, w: 46, h: 46 },
+		'notification-iconSize': { w: 24, h: 24 },
+		'notification-targetRect': { x: 2, y: 2, w: 20, h: 20 },
 		'hdpi-iconSize': { w: 72, h: 72 },
 		'mdpi-iconSize': { w: 48, h: 48 },
 		'hdpi-none-targetRect': { x: 4, y: 4, w: 64, h: 64 },
@@ -35,17 +37,39 @@ var components,
 		'mdpi-launcher-targetRect': { x: 5, y: 5, w: 38, h: 38 }
 	}
 ;
+function download() {
+	var continue_ = function(foreCtx) {
+		var zip = new JSZip();
+		$$('.out-image-block:not([hidden]) img').forEach(img => zip.file((
+			img.id == 'splash-hdpi' ? 'icon' : (img.id == 'splash-mdpi' ? 'favicon' : 'res/'+(img.id.replace(/^(.*?)-(.*?)$/, 'drawable-$2/$1')))
+		)+'.png', img.src.split(',').slice(1).join(','), {
+			createFolders: true,
+			base64: true
+		}));
+		zip.generateAsync({ type: 'blob' }).then(function(content) {
+			var a = document.createElement('a');
+			a.href = URL.createObjectURL(content);
+			a.download = 'icons.zip';
+			a.click();
+		});
+	}
+	if ('JSZip' in window)
+		continue_();
+	else{
+		var script = document.createElement('script');
+		script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.5.0/jszip.min.js';
+		script.onload = () => continue_();
+		document.head.appendChild(script);
+	}
+}
 function regenerate(force) {
 	if (!force) {
 		if (regenerate.timeout_)
 			clearTimeout(regenerate.timeout_);
-		regenerate.timeout_ = setTimeout(function() {
-			regenerate(true);
-		}, 1000);
-		return;
+		return regenerate.timeout_ = setTimeout(() => regenerate(true), 1000);
 	}
-	var values = form.getValues();
-	var shapes = Array.from(new Set(values.versions.map(v => ((v == 'notify') ? 'launcher' : v)))).filter(v => (resList.indexOf(v) == -1));
+	var values = form.getValues(),
+		shapes = Array.from(new Set(values.versions.map(v => ((v == 'notification') ? 'launcher' : v)))).filter(v => (resList.indexOf(v) == -1));
 	if (shapes.length > 0)
 		return imagelib.loadImageResources(shapes.reduce((res, cur) => {
 			[ 'back', 'fore1', 'mask' ].forEach(type => (res[cur+'-'+type] = 'res/'+cur+'/'+type+'.png'));
@@ -56,19 +80,18 @@ function regenerate(force) {
 			regenerate();
 			studio.hash.bindFormToDocumentHash(form);
 		});
-	if (!values['foreground'].ctx)
+	$('aside').style.display = (values.foreground.ctx ? 'flex' : 'none');
+	if (!values.foreground.ctx) {
+		time = 0;
+		$('#spinner').hidden = true;
 		return;
+	}
 	var continue_ = function(foreCtx) {
-		console.log(
-			VERSIONS,
-			values.versions
-		);
-		var backgroundShape = values.backgroundShape;
 		for (var version of VERSIONS) {
 			if (!($('.group-'+version.id).hidden = (values.versions.indexOf(version.id) == -1))) {
 				for (var resolution of RESOLUTIONS) {
 					var density = resolution.id;
-					if (version.id == 'splash' && !density.match('xhdpi'))
+					if ((version.id == 'banner' && ([ 'xhdpi' ].indexOf(density) == -1)) || (version.id == 'splash' && ([ 'xhdpi', 'hdpi', 'mdpi' ].indexOf(density) == -1)))
 						continue;
 					if (!($('.block-'+version.id+'-'+density).hidden = (values.resolutions.indexOf(density) == -1))) {
 						var iconSize,
@@ -76,24 +99,22 @@ function regenerate(force) {
 							mult = studio.util.getMultBaseMdpi(density);
 						if (version.id == 'launcher') {
 							iconSize = PARAM_RESOURCES[density+'-iconSize'] || studio.util.multRound(PARAM_RESOURCES['mdpi-iconSize'], mult);
-							targetRect = PARAM_RESOURCES[density+'-'+backgroundShape+'-targetRect'] || studio.util.multRound(PARAM_RESOURCES['mdpi-'+backgroundShape+'-targetRect'], mult);
-							console.log(version.id, density, { iconSize, targetRect });
+							targetRect = PARAM_RESOURCES[density+'-'+values.backgroundShape+'-targetRect'] || studio.util.multRound(PARAM_RESOURCES['mdpi-'+values.backgroundShape+'-targetRect'], mult);
 						}else if (version.id == 'launcher_round') {
 							iconSize = PARAM_RESOURCES[density+'-iconSize'] || studio.util.multRound(PARAM_RESOURCES['mdpi-iconSize'], mult);
-							targetRect = PARAM_RESOURCES[density+'-launcher_round-targetRect'] || studio.util.multRound(PARAM_RESOURCES['mdpi-launcher_round-targetRect'], mult);
-						}else if (version.id == 'splash') {
-							iconSize = PARAM_RESOURCES[density+'-splash-iconSize'] || studio.util.multRound(PARAM_RESOURCES['mdpi-iconSize'], mult);
-							targetRect = PARAM_RESOURCES[density+'-'+version.id+'-targetRect'] || studio.util.multRound(PARAM_RESOURCES['mdpi-'+backgroundShape+'-targetRect'], mult);
-							console.log(version.id, density, { iconSize, targetRect });
+							targetRect = PARAM_RESOURCES[density+'-'+version.id+'-targetRect'] || studio.util.multRound(PARAM_RESOURCES['mdpi-'+version.id+'-targetRect'], mult);
+						}else if ((version.id == 'splash') || (version.id == 'banner')) {
+							iconSize = PARAM_RESOURCES[density+'-'+version.id+'-iconSize'] || studio.util.multRound(PARAM_RESOURCES['mdpi-iconSize'], mult);
+							targetRect = PARAM_RESOURCES[density+'-'+version.id+'-targetRect'] || studio.util.multRound(PARAM_RESOURCES['mdpi-'+values.backgroundShape+'-targetRect'], mult);
 						}else{
 							iconSize = studio.util.multRound(PARAM_RESOURCES[version.id+'-iconSize'], mult);
 							targetRect = studio.util.multRound(PARAM_RESOURCES[version.id+'-targetRect'], mult);
 						}
-						var outCtx = imagelib.drawing.context(iconSize);
-						var tmpCtx = imagelib.drawing.context(iconSize);
-						if ((values['foreground'].type == 'text' || values['foreground'].type == 'clipart') && values['foreColor'].alpha == 0)
-							values['foreColor'].alpha = 100;
-						if (backgroundShape == 'none') {
+						var outCtx = imagelib.drawing.context(iconSize),
+							tmpCtx = imagelib.drawing.context(iconSize);
+						if (values.foreground.type == 'text' || values.foreground.type == 'clipart')
+							values.foreColor.alpha = 100;
+						if (values.backgroundShape == 'none') {
 							tmpCtx.save();
 							tmpCtx.globalCompositeOperation = 'source-over';
 							if (foreCtx) {
@@ -102,16 +123,16 @@ function regenerate(force) {
 									w: foreCtx.canvas.width,
 									h: foreCtx.canvas.height
 								};
-								if (values['foreColor'].alpha) {
+								if (values.foreColor.alpha) {
 									var tmpCtx2 = imagelib.drawing.context(foreSize);
 									imagelib.drawing.copy(tmpCtx2, foreCtx, foreSize);
 									tmpCtx2.globalCompositeOperation = 'source-atop';
-									tmpCtx2.fillStyle = (version.id != 'notify' ? values['foreColor'].color : '#000');
+									tmpCtx2.fillStyle = (version.id != 'notification' ? values.foreColor.color : '#000');
 									tmpCtx2.fillRect(0, 0, foreSize.w, foreSize.h);
 									copyFrom = tmpCtx2;
-									tmpCtx.globalAlpha = (version.id != 'notify' ? (values['foreColor'].alpha / 100) : 1);
+									tmpCtx.globalAlpha = 1;
 								}
-								imagelib.drawing[values['crop'] ? 'drawCenterCrop' : 'drawCenterInside']
+								imagelib.drawing[values.crop ? 'drawCenterCrop' : 'drawCenterInside']
 								(tmpCtx, copyFrom, targetRect, {
 									x: 0, y: 0,
 									w: foreSize.w, h: foreSize.h
@@ -119,14 +140,15 @@ function regenerate(force) {
 							}
 							tmpCtx.restore();
 							var foreEffect = 1;
-							if (backgroundShape == 'none')
+							if (values.backgroundShape == 'none')
 								outCtx.drawImage(tmpCtx.canvas, 0, 0);
 						}else{
+							let res = (([ 'banner', 'splash', 'launcher_round' ].indexOf(version.id) > -1) ? version.id : values.backgroundShape);
 							tmpCtx.save();
 							tmpCtx.globalCompositeOperation = 'source-over';
-							imagelib.drawing.copy(tmpCtx, IMAGE_RESOURCES[(version.id == 'splash' ? 'splash' : (version.id == 'launcher_round' ? 'launcher_round' : backgroundShape))+'-mask'], iconSize);
+							imagelib.drawing.copy(tmpCtx, IMAGE_RESOURCES[res+'-mask'], iconSize);
 							tmpCtx.globalCompositeOperation = 'source-atop';
-							tmpCtx.fillStyle = (version.id != 'notify' ? values['backColor'].color : '#fff');
+							tmpCtx.fillStyle = (version.id != 'notification' ? values.backColor.color : '#fff');
 							tmpCtx.fillRect(0, 0, iconSize.w, iconSize.h);
 							if (foreCtx) {
 								var tmpCtx2 = imagelib.drawing.context(iconSize);
@@ -136,18 +158,18 @@ function regenerate(force) {
 									w: foreCtx.canvas.width,
 									h: foreCtx.canvas.height
 								};
-								if (values['foreColor'].alpha) {
+								if (values.foreColor.alpha) {
 									var tmpCtx3 = imagelib.drawing.context(foreSize);
 									imagelib.drawing.copy(tmpCtx3, foreCtx, foreSize);
 									tmpCtx3.globalCompositeOperation = 'source-atop';
-									tmpCtx3.fillStyle = (version.id != 'notify' ? values['foreColor'].color : '#000');
+									tmpCtx3.fillStyle = (version.id != 'notification' ? values.foreColor.color : '#000');
 									tmpCtx3.fillRect(0, 0, foreSize.w, foreSize.h);
 									copyFrom = tmpCtx3;
-									tmpCtx.globalAlpha = (version.id != 'notify' ? (values['foreColor'].alpha / 100) : 1);
+									tmpCtx.globalAlpha = 1;
 								}
-								if (version.id != 'notify' && values['effects'] == 'shadow') {
+								if (version.id != 'notification' && values.effects == 'shadow') {
 									var tmpCtx4 = imagelib.drawing.context(iconSize);
-									imagelib.drawing[values['crop'] ? 'drawCenterCrop' : 'drawCenterInside']
+									imagelib.drawing[values.crop ? 'drawCenterCrop' : 'drawCenterInside']
 									(tmpCtx4, copyFrom, targetRect, {
 										x: 0, y: 0,
 										w: foreSize.w, h: foreSize.h
@@ -155,7 +177,7 @@ function regenerate(force) {
 									imagelib.effects.renderLongShadow(tmpCtx4, iconSize.w, iconSize.h);
 									imagelib.drawing.copy(tmpCtx2, tmpCtx4, iconSize);
 								}
-								imagelib.drawing[values['crop'] ? 'drawCenterCrop' : 'drawCenterInside']
+								imagelib.drawing[values.crop ? 'drawCenterCrop' : 'drawCenterInside']
 								(tmpCtx2, copyFrom, targetRect, {
 									x: 0, y: 0,
 									w: foreSize.w, h: foreSize.h
@@ -164,9 +186,37 @@ function regenerate(force) {
 							}
 							tmpCtx.restore();
 							var foreEffect = 1;
-							imagelib.drawing.copy(outCtx, IMAGE_RESOURCES[(version.id == 'splash' ? 'splash' : (version.id == 'launcher_round' ? 'launcher_round' : backgroundShape))+'-back'], iconSize);
+							imagelib.drawing.copy(outCtx, IMAGE_RESOURCES[res+'-back'], iconSize);
 							imagelib.drawing.copy(outCtx, tmpCtx, iconSize);
-							imagelib.drawing.copy(outCtx, IMAGE_RESOURCES[(version.id == 'splash' ? 'splash' : (version.id == 'launcher_round' ? 'launcher_round' : backgroundShape))+'-fore'+foreEffect], iconSize);
+							imagelib.drawing.copy(outCtx, IMAGE_RESOURCES[res+'-fore'+foreEffect], iconSize);
+						}
+						if ((version.id == 'banner') && values.foreground.title) {
+							let f_, x_, y_,
+								s_ = (1 - values.foreground.pad),
+								ctx = outCtx.canvas.getContext('2d');
+							ctx.fillStyle = values.foreColor.color;
+							if (values.foreground.name || values.foreground.origImg) {
+								x_ = 120;
+								f_ = 60;
+								y_ = 107;
+							}else{
+								x_ = 30;
+								f_ = 53;
+								y_ = 100;
+							}
+							if (values.crop) {
+								x_ += 20;
+								s_ = s_ - .25;
+							}
+							if (values.foreground.description) {
+								f_ = 40;
+								y_ = 87;
+								// ctx.fillStyle = '#4fb2bf';
+								ctx.font = (f_*s_)+'px Roboto, sans-serif';
+								ctx.fillText(values.foreground.description, x_, y_+(f_*s_));
+							}
+							ctx.font = 'bold '+(f_*s_)+'px Roboto, sans-serif';
+							ctx.fillText(values.foreground.title, x_, y_);
 						}
 						imagelib.loadFromUri(outCtx.canvas.toDataURL(), function(version, density) {
 							return function(img) {
@@ -179,13 +229,16 @@ function regenerate(force) {
 		}
 		console.log('finish', (Math.round(new Date().getTime())-time));
 		time = 0;
+		$('#spinner').hidden = true;
 	};
-	continue_((values['foreground'] ? values['foreground'].ctx : null));
+	continue_((values.foreground ? values.foreground.ctx : null));
 }
 form = new studio.forms.Form('iconform', {
 	onChange: function(field) {
-		if (time == 0)
+		if (time == 0) {
+			$('#spinner').hidden = false;
 			time = Math.round(new Date().getTime());
+		}
 		regenerate();
 	},
 	fields: [
@@ -199,7 +252,7 @@ form = new studio.forms.Form('iconform', {
 			title: 'Разрешения',
 			type: 'checkbox',
 			options: RESOLUTIONS,
-			defaultValue: [ 'xxhdpi' ]
+			defaultValue: [ 'hdpi' ]
 		}),
 		new studio.forms.ImageField('foreground', {
 			title: 'Содержимое',
@@ -209,8 +262,7 @@ form = new studio.forms.Form('iconform', {
 		new studio.forms.ColorField('foreColor', {
 			title: 'Цвет',
 			defaultValue: '#607d8b',
-			alpha: true,
-			defaultAlpha: 0
+			dialog: 'colors'
 		}),
 		new studio.forms.BooleanField('crop', {
 			title: 'Выравнить',
@@ -229,7 +281,8 @@ form = new studio.forms.Form('iconform', {
 		}),
 		new studio.forms.ColorField('backColor', {
 			title: 'Фон',
-			defaultValue: '#ffffff'
+			defaultValue: '#ffffff',
+			dialog: 'colors'
 		}),
 		new studio.forms.EnumField('effects', {
 			title: 'Эффект',
@@ -250,12 +303,10 @@ for (var version of VERSIONS) {
 		label: version.title
 	});
 	for (var density of RESOLUTIONS) {
-		if (version.id != 'splash' || density.id.match('xhdpi'))
-			studio.ui.createImageOutputSlot({
-				container: group,
-				id: version.id+'-'+density.id,
-				label: density.id
-			});
+		studio.ui.createImageOutputSlot({
+			container: group,
+			id: version.id+'-'+density.id,
+			label: density.id
+		});
 	}
 }
-console.log(form);

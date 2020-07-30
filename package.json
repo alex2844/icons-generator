@@ -1,12 +1,14 @@
 {
 	"name": "icons-generator",
 	"version": "1.0.0",
-	"description": "",
+	"description": "Данный проект создан для того, чтобы вы могли создать свою уникальную иконку для своего сайта, приложения на android и android TV. Иконки создаются для материального дизайна",
 	"scripts": {
 		"cron": "CRON=true npx gulp",
-		"server": "SERVER=true npx gulp --server"
+		"server": "SERVER=true npx gulp --server",
+		"service": "npx forever start node_modules/gulp/bin/gulp.js server"
 	},
 	"devDependencies": {
+		"forever": "^3.0.0",
 		"gulp": "^4.0.2",
 		"http-server": "^0.12.3",
 		"js-global-fetch": "^1.2.0"

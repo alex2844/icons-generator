@@ -229,10 +229,16 @@ Base = Base.extend({
 	imagelib.effects = {};
 	imagelib.effects.renderLongShadow = (ctx, w, h) => {
 		var imgData = ctx.getImageData(0, 0, w, h);
+		let tmp = [];
 		for (var y = 0; y < imgData.height; y++) {
 			for (var x = 0; x < imgData.width; x++) {
-				if (imagelib.effects.isInShade(imgData, x, y))
-					imagelib.effects.castShade(imgData, x, y)
+				if (imagelib.effects.isInShade(imgData, x, y)) {
+					var n = (((w == 320) && (h == 180)) ? Math.min(((200-x)+(30-y)), 22) : 32),
+						step = n / (imgData.width + imgData.height),
+						alpha = n - ((x + y) * step),
+						color = [0, 0, 0, alpha];
+					imagelib.effects.setColor(imgData, x, y, color)
+				}
 			}
 		}
 		ctx.putImageData(imgData, 0, 0)
@@ -257,13 +263,6 @@ Base = Base.extend({
 			if (imagelib.effects.getAlpha(imgData, x, y))
 				return true
 		}
-	};
-	imagelib.effects.castShade = (imgData, x, y) => {
-		var n = 32,
-			step = n / (imgData.width + imgData.height),
-			alpha = n - ((x + y) * step),
-			color = [0, 0, 0, alpha];
-		return imagelib.effects.setColor(imgData, x, y, color)
 	};
 	imagelib.effects.setColor = (imgData, x, y, color) => {
 		var i = (y * imgData.width + x) * 4,
@@ -480,25 +479,40 @@ Base = Base.extend({
 	b.forms.ColorField = b.forms.Field.extend({
 		createUI: function(c) {
 			var e = $('.form-field-container', this.base(c)),
-				d = this;
-			this.el_ = $('<label class="input"><input class="form-color" type="color" id="'+this.getHtmlId()+'" value="'+this.getValue().color+'" /></label>').firstElementChild;
-			this.el_.firstElementChild.onchange = el_ => d.setValue({ color: el_.target.value }, true);
-			e.append(this.el_);
+				d = this,
+				el_ = $('<label class="input"><input class="form-color" type="color" id="'+this.getHtmlId()+'" value="'+this.getValue().color+'" /></label>').firstElementChild;
+			(this.el_ = el_.firstElementChild).onchange = el_ => d.setValue({ color: el_.target.value }, true);
+			e.append(el_);
+			if (d.params_.dialog) {
+				e.append($('<button class="material-icons" style="margin-left: 10px">color_lens</i>').firstElementChild.on('click', () => {
+					let d_ = $('#'+d.params_.dialog);
+					d_.$('input').value = d.value_;
+					d_.link = d;
+					if (d_.open_)
+						d_.show();
+					else
+						fetch('https://raw.githubusercontent.com/alex2844/icons-generator/gh-pages/colors.json').then(d__ => d__.json()).then(d__ => {
+							var table = d_.$('.table');
+							table.dataset.array = JSON.stringify(d__);
+							qad.init.table(table);
+							table.$$('td').filter(td => td.innerHTML.startsWith('#')).forEach(td => {
+								var c = qad.color(td.innerHTML);
+								td.style.backgroundColor = c.hex;
+								td.style.color = ((((c.luminance > 1.05) ? ((c.luminance + 0.05) / 1.05) : ((1.05) / (c.luminance + 0.05))) >= 4.5) ? '#fff' : '#000');
+								td.on('click', () => d_.link.setValue({ color: (d_.$('input').value = c.hex) }, true));
+							});
+							d_.$('input').on('change', () => d_.link.setValue({ color: d_.$('input').value }, true));
+							d_.open_ = true;
+							d_.show();
+						});
+				}));
+			}
 		},
 		getValue: function() {
 			var c = this.value_ || this.params_.defaultValue || '#000000';
 			if (/^([0-9a-f]{6}|[0-9a-f]{3})$/i.test(c))
 				c = '#'+c
-			var d = this.alpha_;
-			if (typeof d != 'number') {
-				d = this.params_.defaultAlpha;
-				if (typeof d != 'number')
-					d = 100
-			}
-			return {
-				color: c,
-				alpha: d
-			}
+			return { color: c }
 		},
 		setValue: function(e, d) {
 			e = e || {};
@@ -541,11 +555,13 @@ Base = Base.extend({
 			this.setValueInternal_(this.getValue())
 		},
 		getValue: function() {
-			var c;
+			var c, b_, t_;
 			if (this.params_.type == 'checkbox') {
 				c = $$('input', this.el_).filter(f => f.checked).map(f => f.value);
 				if (!c.length)
 					c = this.params_.defaultValue || [ this.params_.options[0].id ]
+				if ((this.id_ == 'versions') && (b_ = this.el_.$('input[value="banner"]')) && (t_ = $$('[id*="spaceform-title"], [id*="spaceform-description"]')).length)
+					t_.forEach(t__ => (t__.closest('.form-field-outer').hidden = !b_.checked));
 			}else{
 				c = this.value_;
 				if (c === undefined)
@@ -625,6 +641,8 @@ Base = Base.extend({
 			return c
 		},
 		setValue: function(d, c) {
+			if (typeof(d) != 'number')
+				return;
 			this.value_ = d;
 			if (!c)
 				this.el_.value = d
@@ -769,7 +787,6 @@ Base = Base.extend({
 				var i = this;
 				setTimeout(function() {
 					var r = i.value.toLowerCase().replace(/[^\w]+/g, '');
-					console.log(r);
 					q.$$('.card').forEach(el_ => (el_.hidden = (!r ? false : (el_.$('.material-icons').textContent.indexOf(r) == -1))));
 				}, 0)
 			});
@@ -814,7 +831,12 @@ Base = Base.extend({
 			this.textForm_ = new b.forms.Form(this.form_.id_+'-'+this.id_+'-textform', {
 				onChange: () => {
 					var i = n.textForm_.getValues();
+						// i_ = n.spaceForm_.getValues();
 					n.textParams_.text = i.text;
+					/*
+					n.textParams_.title = i_.title;
+					n.textParams_.description = i_.description;
+					 */
 					$('#_frm-iconform-foreground-textform-text').style['font-family'] = (n.textParams_.fontStack = i.font ? i.font : 'Roboto, sans-serif');
 					n.valueFilename_ = i.text;
 					n.tryLoadWebFont_();
@@ -854,6 +876,8 @@ Base = Base.extend({
 					n.renderValueAndNotifyChanged_()
 				},
 				fields: [
+					new b.forms.TextField('title', { title: 'Название' }),
+					new b.forms.TextField('description', { title: 'Описание' }),
 					(this.spaceFormTrimField_ = new b.forms.BooleanField('trim', {
 						title: 'Обрезать',
 						defaultValue: this.params_.defaultValueTrim || false,
@@ -919,7 +943,10 @@ Base = Base.extend({
 				ctx: this.valueCtx_,
 				origImg: this.valueOrigImg_,
 				type: this.valueType_,
-				name: this.valueFilename_
+				name: this.valueFilename_,
+				title: this.spaceFormValues_.title,
+				description: this.spaceFormValues_.description,
+				pad: this.spaceFormValues_.pad
 			}
 		},
 		renderValueAndNotifyChanged_: function() {
@@ -928,6 +955,8 @@ Base = Base.extend({
 				this.valueOrigImg_ = null
 			}
 			var g = this;
+			if (!g.valueType_ && g.spaceFormValues_.title && (g.form_.getValues().versions.indexOf('banner') > -1))
+				this.valueType_ = 'text';
 			switch (this.valueType_) {
 				case 'image':
 					if (this.imageParams_.canvgSvgText || this.imageParams_.canvgSvgUri) {
@@ -968,14 +997,14 @@ Base = Base.extend({
 						})
 				break;
 				case 'text':
-					if (this.textParams_.text) {
+					if (this.textParams_.text || this.spaceFormValues_.title) {
 						var f = {
 							w: 4800,
 							h: 1600
 						};
 						var i = f.h * 0.75,
 							c = imagelib.drawing.context(f),
-							h = ' '+this.textParams_.text+' ';
+							h = ' '+(this.textParams_.text || '')+' ';
 						c.fillStyle = '#000';
 						c.font = 'bold '+i+'px/'+f.h+'px '+this.textParams_.fontStack;
 						c.textBaseline = 'alphabetic';
