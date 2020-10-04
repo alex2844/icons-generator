@@ -17,14 +17,19 @@ var form,
 		{ id: 'notification', title: 'Уведомления' }
 	],
 	PARAM_RESOURCES = {
+		'xxhdpi-banner-iconSize': { w: 1590, h: 400 },
+		'xxhdpi-banner-targetRect': { x: 1060, y: 40, w: 300, h: 300 },
+		'xxhdpi-banner-name': 'cover',
 		'xhdpi-banner-iconSize': { w: 320, h: 180 },
 		'xhdpi-banner-targetRect': { x: 22, y: 40, w: 105, h: 105 },
 		'xhdpi-splash-iconSize': { w: 420, h: 420 },
 		'xhdpi-splash-targetRect': { x: 5, y: 5, w: 410, h: 410 },
 		'hdpi-splash-iconSize': { w: 192, h: 192 },
 		'hdpi-splash-targetRect': { x: 1, y: 1, w: 190, h: 190 },
+		'hdpi-splash-name': 'icon',
 		'mdpi-splash-iconSize': { w: 48, h: 48 },
 		'mdpi-splash-targetRect': { x: 1, y: 1, w: 46, h: 46 },
+		'mdpi-splash-name': 'favicon',
 		'notification-iconSize': { w: 24, h: 24 },
 		'notification-targetRect': { x: 2, y: 2, w: 20, h: 20 },
 		'hdpi-iconSize': { w: 72, h: 72 },
@@ -40,8 +45,9 @@ var form,
 function download() {
 	var continue_ = function(foreCtx) {
 		var zip = new JSZip();
+		zip.file('Icons.txt', 'Icons generator: '+location.href);
 		$$('.out-image-block:not([hidden]) img').forEach(img => zip.file((
-			img.id == 'splash-hdpi' ? 'icon' : (img.id == 'splash-mdpi' ? 'favicon' : 'res/'+(img.id.replace(/^(.*?)-(.*?)$/, 'drawable-$2/$1')))
+			PARAM_RESOURCES[img.id+'-name'] || 'res/'+(img.id.replace(/^(.*?)-(.*?)$/, 'mipmap-$1/$2'))
 		)+'.png', img.src.split(',').slice(1).join(','), {
 			createFolders: true,
 			base64: true
@@ -91,9 +97,9 @@ function regenerate(force) {
 			if (!($('.group-'+version.id).hidden = (values.versions.indexOf(version.id) == -1))) {
 				for (var resolution of RESOLUTIONS) {
 					var density = resolution.id;
-					if ((version.id == 'banner' && ([ 'xhdpi' ].indexOf(density) == -1)) || (version.id == 'splash' && ([ 'xhdpi', 'hdpi', 'mdpi' ].indexOf(density) == -1)))
+					if ((version.id == 'banner' && ([ 'xhdpi', 'xxhdpi' ].indexOf(density) == -1)) || (version.id == 'splash' && ([ 'xhdpi', 'hdpi', 'mdpi' ].indexOf(density) == -1)))
 						continue;
-					if (!($('.block-'+version.id+'-'+density).hidden = (values.resolutions.indexOf(density) == -1))) {
+					if (!($('.block-'+density+'-'+version.id).hidden = (values.resolutions.indexOf(density) == -1))) {
 						var iconSize,
 							targetRect,
 							mult = studio.util.getMultBaseMdpi(density);
@@ -195,32 +201,42 @@ function regenerate(force) {
 								s_ = (1 - values.foreground.pad),
 								ctx = outCtx.canvas.getContext('2d');
 							ctx.fillStyle = values.foreColor.color;
-							if (values.foreground.name || values.foreground.origImg) {
-								x_ = 120;
-								f_ = 60;
-								y_ = 107;
-							}else{
-								x_ = 30;
-								f_ = 53;
-								y_ = 100;
-							}
-							if (values.crop) {
-								x_ += 20;
-								s_ = s_ - .25;
-							}
-							if (values.foreground.description) {
-								f_ = 40;
-								y_ = 87;
-								// ctx.fillStyle = '#4fb2bf';
-								ctx.font = (f_*s_)+'px Roboto, sans-serif';
-								ctx.fillText(values.foreground.description, x_, y_+(f_*s_));
+							if (density == 'xhdpi') {
+								if (values.foreground.name || values.foreground.origImg) {
+									x_ = 120;
+									f_ = 60;
+									y_ = 107;
+								}else{
+									x_ = 30;
+									f_ = 53;
+									y_ = 100;
+								}
+								if (values.crop) {
+									x_ += 20;
+									s_ = s_ - .25;
+								}
+								if (values.foreground.description) {
+									f_ = 40;
+									y_ = 87;
+									// ctx.fillStyle = '#4fb2bf';
+									ctx.font = (f_*s_)+'px Roboto, sans-serif';
+									ctx.fillText(values.foreground.description, x_, y_+(f_*s_));
+								}
+							}else if (density == 'xxhdpi') {
+								x_ = 250;
+								y_ = 225;
+								f_ = 155;
+								if (values.foreground.description) {
+									ctx.font = (f_*s_*.4)+'px Roboto, sans-serif';
+									ctx.fillText(values.foreground.description, x_+10, y_+(f_*s_*.5));
+								}
 							}
 							ctx.font = 'bold '+(f_*s_)+'px Roboto, sans-serif';
 							ctx.fillText(values.foreground.title, x_, y_);
 						}
 						imagelib.loadFromUri(outCtx.canvas.toDataURL(), function(version, density) {
 							return function(img) {
-								document.querySelector('#'+version+'-'+density).src = img.src;
+								document.querySelector('#'+density+'-'+version).src = img.src;
 							};
 						}(version.id, density));
 					}
@@ -305,7 +321,7 @@ for (var version of VERSIONS) {
 	for (var density of RESOLUTIONS) {
 		studio.ui.createImageOutputSlot({
 			container: group,
-			id: version.id+'-'+density.id,
+			id: density.id+'-'+version.id,
 			label: density.id
 		});
 	}
