@@ -165,13 +165,17 @@ function regenerate(force) {
 									h: foreCtx.canvas.height
 								};
 								if (values.foreColor.alpha) {
-									var tmpCtx3 = imagelib.drawing.context(foreSize);
-									imagelib.drawing.copy(tmpCtx3, foreCtx, foreSize);
-									tmpCtx3.globalCompositeOperation = 'source-atop';
-									tmpCtx3.fillStyle = (version.id != 'notification' ? values.foreColor.color : '#000');
-									tmpCtx3.fillRect(0, 0, foreSize.w, foreSize.h);
-									copyFrom = tmpCtx3;
-									tmpCtx.globalAlpha = 1;
+									if (version.id == 'notification')
+										tmpCtx.globalCompositeOperation = 'xor';
+									else{
+										var tmpCtx3 = imagelib.drawing.context(foreSize);
+										imagelib.drawing.copy(tmpCtx3, foreCtx, foreSize);
+										tmpCtx3.globalCompositeOperation = 'source-atop';
+										tmpCtx3.fillStyle = values.foreColor.color;
+										tmpCtx3.fillRect(0, 0, foreSize.w, foreSize.h);
+										copyFrom = tmpCtx3;
+										tmpCtx.globalAlpha = 1;
+									}
 								}
 								if (version.id != 'notification' && values.effects == 'shadow') {
 									var tmpCtx4 = imagelib.drawing.context(iconSize);
